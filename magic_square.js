@@ -6,127 +6,68 @@
  */
 
 function formingMagicSquare(s = []) {
-    const sums = [rowsSum(s), colsSum(s), diagSum(s)].flat();
+  const triple = [
+    [4, 3, 8],
+    [8, 1, 6],
+    [6, 7, 2],
+    [2, 9, 4],
+  ];
 
-    const common = sums.reduce((acc, sum) => {
-        acc[sum] = acc[sum] ? acc[sum] + 1 : 1;
-        return acc;
-    }, {});
+  const inverseTriple = [...triple].reverse().map(el => [...el].reverse());
 
-    const mostCommon = Object.keys(common).reduce((acc, i) => {
-        if (common[i] > acc.count) {
-            return {
-                sum: i,
-                count: common[i]
-            };
-        }
-        return acc;
-    }, {sum: 0, count: 0});
+  const arr = [
+    s[0],
+    [s[0][2], s[1][2], s[2][2]],
+    [...s[2]].reverse(),
+    [s[2][0], s[1][0], s[0][0]]
+  ];
 
-    // console.log('common:', mostCommon.sum);
+  // just to be replaced in begin
+  let lesser = 45;
 
-    const hashSquare = new Map();
+  for (let i = 0; i < 8; i++) {
+    const combination = i <= 3 ? triple : inverseTriple;
 
-    s.forEach((line, i) => {
-        line.forEach((el, j) => {
-            hashSquare.set(`s${i}${j}`, el);
-        })
-    });
-
-    const findRelation = (mc, hashMap) => {
-        const keys = Array.from(hashMap.keys());
-
-        const lines = keys.reduce((r, _, index, arr) => {
-            if (index % 3 === 0) {
-                r.push(arr.slice(index, index + 3));
-            }
-            return r;
-        }, []);
-
-        const columns = keys.reduce((acc, current) => {
-            const index = parseInt(current.slice(-1));
-            acc[index].push(current);
-            return acc;
-        }, [[],[],[]]);
-
-        const diagonals = keys.reduce((acc, current) => {
-            const row = parseInt(current[1]);
-            const col = parseInt(current[2]);
-
-            if (row == col) {
-                acc[0].push(current);
-            }
-
-            if (row + col == 2) {
-                acc[1].push(current);
-            }
-
-            return acc;
-        }, [[], []]);
-
-        const elements = [...lines, ...columns, ...diagonals];
-
-        console.log('common:', mc);
-
-        const exceptions = elements.filter(conj => {
-            const sum = conj.reduce((acc, index) => acc + hashMap.get(index), 0);
-
-            console.log(`sum is ${sum}| ${sum} !== ${mc}`, sum != mc);
-            
-            return mc != sum;
-        });
-
-        return exceptions;
+    if (i > 0) {
+      combination.push(combination.shift());
     }
 
-    // console.log('common:', mostCommon.sum);
-    
-    return findRelation(mostCommon.sum, hashSquare);
-}
+    const cost = findCost(arr, combination);
 
-function rowsSum(s) {
-    return s.map(line => line.reduce((acc, el) => acc + el));
-}
-
-function colsSum(s) {
-    return s.reduce((acc, line) => {
-        const [i, j, k] = acc;
-        const [c1, c2, c3] = line;
-        return [
-            i + c1,
-            j + c2,
-            k + c3,
-        ];
-    }, [0, 0, 0]);
-}
-
-function diagSum(s) {
-    return [
-        s[0][0] + s[1][1] + s[2][2],
-        s[0][2] + s[1][1] + s[2][0],
-    ]
-}
-
-function validate(s) {
-    const magicConstant = s[0].reduce((acc, el) => acc + el);
-
-    const rowsValidator = () => {
-        return rowsSum(s).filter(e => e === magicConstant).length === 3;
+    if (cost < lesser) {
+      lesser = cost;
     }
+  }
 
-    const colValidator = () => {
-        return colsSum(s).filter(e => e === magicConstant).length === 3;
+  const midCostReplace = Math.abs(s[1][1] - 5);
+
+  return lesser + midCostReplace;
+};
+
+function findCost(original, changed) {
+  let acc = {
+    cost: 0,
+    elements: []
+  };
+
+  for (let i = 0; i < 4; i++) {
+    const originalConj = original[i];
+    const changedConj = changed[i];
+    for (let j = 0; j < 3; j++) {
+      const choosedNumber = changedConj[j];
+
+      if (!acc.elements.includes(choosedNumber)) {
+        acc.cost = acc.cost + Math.abs(originalConj[j] - choosedNumber);
+        acc.elements.push(choosedNumber);
+      }
+
     }
+  }
 
-    const diagValidator = () => {
-        return diagSum(s).filter(e => e === magicConstant).length === 2;
-    }
-
-    return rowsValidator() && colValidator() && diagValidator();
+  return acc.cost;
 }
 
 
-const s = [[4, 8, 2], [4, 5, 7], [6, 1, 6]]
-// const s2 = [[4, 9, 2], [3, 5, 7], [8, 1, 6]]
+const s = [[4, 9, 2], [3, 5, 7], [8, 1, 5]];
 
 console.log(formingMagicSquare(s));
