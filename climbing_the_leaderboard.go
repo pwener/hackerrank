@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 /*
  * Complete the 'climbingLeaderboard' function below.
@@ -10,65 +12,50 @@ import "fmt"
  *  1. INTEGER_ARRAY ranked
  *  2. INTEGER_ARRAY player
  */
-
 func climbingLeaderboard(ranked []int32, player []int32) []int32 {
-    playerRanks := []int32{}
+	playerRanks := []int32{}
 
-    for _, score := range player {
-        copyArr := ranked
-        copyArr = append(copyArr, score)
-        // insert new item
-        for i, value := range copyArr {
-            if value < score {
-                temp := copyArr[i:]
-                copyArr := copyArr[:i]
-                copyArr = append(copyArr, score)
-                copyArr = append(copyArr, temp...)
-                break
-            }
-        }
-        playerRanks = append(playerRanks, findRank(copyArr, score))
-    }
+	var currentRank int32 = 1
+	rankIndex := 0
 
-    return playerRanks
+    lastScore := ranked[len(ranked)-1]
+	lastScoreIndex := len(player) - 1
+
+	for lastScoreIndex >= 0 {
+		rankScore := ranked[rankIndex]
+
+		if player[lastScoreIndex] >= rankScore {
+            playerRanks = append(playerRanks, currentRank)
+            lastScoreIndex--;
+		}
+
+		if rankIndex == len(ranked) - 1 {
+			playerRanks = append(playerRanks, currentRank+1)
+            break;
+		}
+
+		if rankScore != lastScore {
+			currentRank++
+		}
+
+		rankIndex++
+
+		lastScore = rankScore
+	}
+
+	return reverseInts(playerRanks)
 }
 
-func findRank(ranked []int32, score int32) int32 {
-    ranks := getRanks(ranked)
-
-    rankMap := make(map[int32]int32, len(ranked) + 1)
-
-    for i, v := range ranks {
-        rankMap[ranked[i]] = v
-    }
-
-    return rankMap[score]
-}
-
-func getRanks(ranked []int32) []int32 {
-    var ranks = []int32{}
-
-    for i, v := range ranked {
-        if i == 0 {
-            ranks = append(ranks, 1)
-            continue
-        }
-
-        index := i - 1
-        lastRank := ranks[index]
-        if (v == ranked[index]) {
-            ranks = append(ranks, lastRank)
-            continue
-        }
-
-        ranks = append(ranks, lastRank + 1)
-    }
-    return ranks
+func reverseInts(input []int32) []int32 {
+	if len(input) == 0 {
+		return input
+	}
+	return append(reverseInts(input[1:]), input[0])
 }
 
 func main() {
-    input := []int32{100,100,50,40,40,20,10}
-    score := []int32{5, 25, 50, 120}
+	input := []int32{100, 90, 90, 80, 75, 60}
+	score := []int32{50, 65, 77, 90, 102}
 
-    fmt.Println(climbingLeaderboard(input, score))
+	fmt.Println(climbingLeaderboard(input, score))
 }
