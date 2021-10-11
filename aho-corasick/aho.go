@@ -8,7 +8,11 @@
 //
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"queue"
+)
 
 type Vertex struct {
 	children map[rune]int
@@ -101,13 +105,15 @@ func (aho *Aho) calculateSuffLink(vertex int) {
 }
 
 func (aho *Aho) Prepare() {
-	vertexQueue := make([]int, 0);
+	vertexQueue := queue.Queue{}
+	vertexQueue.Init(aho.root);
 	
-	vertexQueue = append(vertexQueue, aho.root)
+	// vertexQueue = append(vertexQueue, aho.root)
 
 	for len(vertexQueue) > 0 {
-		currentVertex := vertexQueue[0]
-		vertexQueue = vertexQueue[1:]
+		currentVertex := vertexQueue.Pop();
+		// vertexQueue[0]
+		// vertexQueue = vertexQueue[1:]
 
 		aho.calculateSuffLink(currentVertex)
 
