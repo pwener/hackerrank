@@ -1,4 +1,6 @@
 #!/bin/python3
+import bisect
+
 
 class Vertex:
   def __init__(self, parentIndex=None, char=None):
@@ -134,32 +136,76 @@ class DNA:
   def __str__(self):
     return "{}-{} | {}".format(self.first, self.last, self.code)
 
+# search all genes_map[seq] that have index 
+# between dna.first and dna.last
+def interval(array, lower_bound, upper_bound):
+  left = 0
+  right = 0
+  for idx, a in enumerate(array):
+    if a['index'] >= lower_bound:
+      left = idx
+      break
+
+  for idx, a in enumerate(reversed(array)):
+    if a['index'] <= upper_bound:
+      right = len(array) - idx
+      break
+
+  # left = bisect.bisect_left(indexes, lower_bound)
+  # right = bisect.bisect_right(indexes, upper_bound)
+
+  return array[left:right]
 
 def dna(genes, health, dnas):
-  genes_map = {}
-
-  for idx, g in enumerate(genes):
-    if g in genes_map:
-      genes_map[g] = genes_map[g] + health[idx]
-    else:
-      genes_map[g] = health[idx]
-
   total_health = []
 
+  t = Trie()
+
+  single_patterns = set(genes)
+
+  # print("add {} patterns".format(len(single_patterns)))
+
+  for g in single_patterns:
+    t.add(g)
+
+  t.build_suffix_and_endlink()
+
+  genes_group = []
+
+  for idx, g in enumerate(genes):
+    genes_group.append({
+      "char": g,
+      "value": health[idx],
+      "index": idx
+    })
+  
+  genes_map = {}
+  for el in genes_group:
+    if el['char'] in genes_map:
+      genes_map[el['char']].append(el)
+    else:
+      genes_map[el['char']] = [el]
+
   for dna in dnas:
-    t = Trie()
-
-    genes_range = genes[dna.first:dna.last+1]
-    for g in genes_range:
-      t.add(g)
-
-    t.build_suffix_and_endlink()
+    # print("calculating for {}".format(dna.code))
 
     sequences = t.process(dna.code)
 
+    sequence_map = {}
+
+    for idx, seq in enumerate(set(sequences)):
+      sequence_map[seq] = 0
+      for gen in interval(genes_map[seq], dna.first, dna.last):
+          sequence_map[seq] = sequence_map[seq] + gen['value']
+
+
+    # print("sequences {}".format(sequences))
+    # print("sequence_map {}".format(sequence_map))
+
     total = 0
     for s in sequences:
-      total += genes_map[s]
+      if s in sequence_map:
+        total += sequence_map[s]
 
     total_health.append(total)
 
