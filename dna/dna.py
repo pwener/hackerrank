@@ -136,25 +136,6 @@ class DNA:
   def __str__(self):
     return "{}-{} | {}".format(self.first, self.last, self.code)
 
-# search all genes_map[seq] that have index 
-# between dna.first and dna.last
-def interval(array, lower_bound, upper_bound):
-  left = 0
-  right = 0
-  for idx, a in enumerate(array):
-    if a['index'] >= lower_bound:
-      left = idx
-      break
-
-  for idx, a in enumerate(reversed(array)):
-    if a['index'] <= upper_bound:
-      right = len(array) - idx
-      break
-
-  # left = bisect.bisect_left(indexes, lower_bound)
-  # right = bisect.bisect_right(indexes, upper_bound)
-
-  return array[left:right]
 
 def dna(genes, health, dnas):
   total_health = []
@@ -191,21 +172,20 @@ def dna(genes, health, dnas):
 
     sequences = t.process(dna.code)
 
-    sequence_map = {}
-
-    for idx, seq in enumerate(set(sequences)):
-      sequence_map[seq] = 0
-      for gen in interval(genes_map[seq], dna.first, dna.last):
-          sequence_map[seq] = sequence_map[seq] + gen['value']
-
-
     # print("sequences {}".format(sequences))
-    # print("sequence_map {}".format(sequence_map))
+    # print("genes_map {}".format(genes_map))
 
     total = 0
+
     for s in sequences:
-      if s in sequence_map:
-        total += sequence_map[s]
+      # print("evaluating {}".format(s))
+
+      for a in genes_map[s]:
+        if a['index'] > dna.last:
+          break
+        
+        if a['index'] >= dna.first:
+          total += health[a['index']]
 
     total_health.append(total)
 
@@ -235,9 +215,4 @@ if __name__ == '__main__':
         dnas.append(DNA(first, last, d))
 
     dna(genes, health, dnas)
-
-
-
-
-
 
