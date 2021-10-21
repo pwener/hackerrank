@@ -10,8 +10,6 @@ package main
 
 import (
 	"fmt"
-
-	"queue"
 )
 
 type Vertex struct {
@@ -20,7 +18,6 @@ type Vertex struct {
 	parent rune
 	parentChar rune
 	suffixLink int
-	workID int
 	endWordLink int
 }
 
@@ -39,7 +36,7 @@ func (a *Aho) Init() {
 	a.root = 0
 }
 
-func (aho *Aho) AddString(pattern string, wordID int) {
+func (aho *Aho) AddString(pattern string) {
 	currentVertex := aho.root
 
 	for _, v := range pattern {
@@ -59,7 +56,6 @@ func (aho *Aho) AddString(pattern string, wordID int) {
 	}
 
 	aho.trie[currentVertex].leaf = true
-	aho.trie[currentVertex].workID = wordID;
 	aho.wordsLen = append(aho.wordsLen, len(pattern))
 }
 
@@ -72,10 +68,11 @@ func (aho *Aho) calculateSuffLink(vertex int) {
 
 	if int(aho.trie[vertex].parent) == aho.root {
 		aho.trie[vertex].suffixLink = aho.root
+
 		if aho.trie[vertex].leaf {
 			aho.trie[vertex].endWordLink = vertex;
 		} else {
-			aho.trie[vertex].endWordLink = aho.trie[aho.trie[vertex].suffixLink].endWordLink
+			aho.trie[vertex].endWordLink = aho.root
 			return
 		}
 	}
@@ -104,21 +101,46 @@ func (aho *Aho) calculateSuffLink(vertex int) {
 	}
 }
 
+type Queue struct {
+	values []int
+	count int
+}
+
+func (q *Queue) Init(value int) {
+	q.values = make([]int, 0)
+
+	q.values = append(q.values, value)
+
+	q.count = 1;
+}
+
+// remove old element
+func (q *Queue) Dequeue() int {
+	last := q.values[0]
+	q.values = q.values[1:]
+
+	q.count--;
+
+	return last
+}
+
+func (q *Queue) Enqueue(value int) {
+	q.values = append(q.values, value)
+	q.count++;
+}
+
+
 func (aho *Aho) Prepare() {
-	vertexQueue := queue.Queue{}
+	vertexQueue := Queue{}
 	vertexQueue.Init(aho.root);
 	
-	// vertexQueue = append(vertexQueue, aho.root)
-
-	for len(vertexQueue) > 0 {
-		currentVertex := vertexQueue.Pop();
-		// vertexQueue[0]
-		// vertexQueue = vertexQueue[1:]
+	for vertexQueue.count > 0 {
+		currentVertex := vertexQueue.Dequeue();
 
 		aho.calculateSuffLink(currentVertex)
 
 		for key, _ := range aho.trie[currentVertex].children {
-			vertexQueue = append(vertexQueue, aho.trie[currentVertex].children[key])
+			vertexQueue.Enqueue(aho.trie[currentVertex].children[key])
 		}
 	}
 }
@@ -166,8 +188,8 @@ func main() {
 
 	patterns := []string{"abba", "cab", "baba", "caab", "ac", "abac", "bac" }
 
-	for i, v := range patterns {
-		aho.AddString(v, i);
+	for _, v := range patterns {
+		aho.AddString(v);
 	}
 
 	aho.Prepare()
