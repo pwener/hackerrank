@@ -1,10 +1,9 @@
 #!/bin/python3
-import bisect
-
 
 class Vertex:
   def __init__(self, parentIndex=None, char=None):
     self.char = char
+    self.idx = []
     self.parentIndex = parentIndex
     self.child = {}
     self.suffix = None
@@ -20,7 +19,7 @@ class Trie:
     self.size = 1
     self.root = 0
 
-  def add(self, pattern):
+  def add(self, pattern, idx):
     currentVertex = self.root
 
     for char in pattern:
@@ -37,6 +36,7 @@ class Trie:
     
     self.trie[currentVertex].leaf = True
     self.trie[currentVertex].pattern = pattern
+    self.trie[currentVertex].idx.append(idx)
 
   # find suffix and endlink
   def build_suffix_and_endlink(self):
@@ -119,11 +119,9 @@ class Trie:
         if check_state == self.root:
           break
 
-        parent = self.trie[self.trie[check_state].parentIndex]
-        idx = parent.child[char] - 1
-
-        if idx >= first and idx <= last:
-          result.append(idx)
+        for i in self.trie[check_state].idx:
+          if i >= first and i <= last:
+            result.append(i)
 
         check_state = self.trie[check_state].suffix
     
@@ -146,36 +144,35 @@ def dna(genes, health, dnas):
 
   t = Trie()
 
-  for g in genes:
-    t.add(g)
+  for idx, g in enumerate(genes):
+    t.add(g, idx)
 
   t.build_suffix_and_endlink()
 
   for dna in dnas:
-    print("Searching for {} in range {}-{}".format(dna.code, dna.first, dna.last))
-    matches = t.process(dna.code, dna.first, dna.last)
-    translated = [genes[s] for s in matches]
-    print("Found {} sequences".format([genes[s] for s in matches]))
+    # print("searching for {} in range {}-{}".format(dna.code, dna.first, dna.last))
+    indexes_matches = t.process(dna.code, dna.first, dna.last)
+    # translated = [genes[s] for s in indexes_matches]
+    # print("found {} matches".format(translated))
 
-    count = len(matches) - 1
-    while count > 0 and count < (dna.last - dna.first):
-      # index of last
-      index = min(matches)
-      print("count is {} and index is {}".format(count, index))
-      while index <= dna.last:
-        # gene of last
-        c = genes[index]
-        if c in translated and index not in matches:
-          matches.append(index)
-          break
-        index += 1
+    matches = []
 
-      count += 1
+    for idx in indexes_matches:
+      matches.append(idx)
 
-    print("Found {} sequences".format([genes[s] for s in matches]))
+    # if len(matches) == 0:
+    #   continue
+
+    # index = dna.first
+    # while index < dna.last or (len(matches) - 1) < (dna.last - dna.first):
+    #   if genes[index] in translated:
+    #     matches.append(index)
+    #   index += 1
+
+    # print("found {} sequences".format([genes[s] for s in matches]))
+    # print("found {} indexes".format(matches))
 
     total = 0
-
     for s in matches:
       total += health[s]
     
