@@ -9,22 +9,22 @@ def search(array, target, lowest=True):
     cond = False
     
     if lowest:
-      cond = (arr[mid] > target and arr[mid-1] < target)
+      cond = (array[mid] > target and array[mid-1] < target)
     else:
-      cond = (arr[mid] < target and arr[mid+1] > target)
+      cond = (array[mid] < target and array[mid+1] > target)
 
-    if arr[mid] == target or cond:
-      return arr[mid]
+    if array[mid] == target or cond:
+      return array[mid]
 
-    if arr[mid] < target:
+    if array[mid] < target:
       left = mid + 1
     else:
       right = mid - 1
   
   return array[0]
 
-arr = [1, 2, 3, 5, 10, 15, 20]
+arr = [1, 3, 5, 10, 15, 20]
 
 # if I want [2, 18]
-print(search(arr, 1))
+print(search(arr, 2))
 print(search(arr, 18, False))

@@ -118,16 +118,17 @@ class Trie:
 
         if check_state == self.root:
           break
-
-        for i in self.trie[check_state].idx:
-          if i >= first and i <= last:
+        
+        indexes = self.trie[check_state].idx
+        for i in indexes:
+          if i > last:
+            break
+          if i >= first:
             result.append(i)
 
         check_state = self.trie[check_state].suffix
     
     return result
-
-
 
 class DNA:
   def __init__(self, first, last, code):
@@ -140,8 +141,6 @@ class DNA:
 
 
 def dna(genes, health, dnas):
-  total_health = []
-
   t = Trie()
 
   for idx, g in enumerate(genes):
@@ -149,36 +148,22 @@ def dna(genes, health, dnas):
 
   t.build_suffix_and_endlink()
 
+  minimum = float("inf")
+  maximum = 0
+
   for dna in dnas:
-    # print("searching for {} in range {}-{}".format(dna.code, dna.first, dna.last))
-    indexes_matches = t.process(dna.code, dna.first, dna.last)
-    # translated = [genes[s] for s in indexes_matches]
-    # print("found {} matches".format(translated))
-
-    matches = []
-
-    for idx in indexes_matches:
-      matches.append(idx)
-
-    # if len(matches) == 0:
-    #   continue
-
-    # index = dna.first
-    # while index < dna.last or (len(matches) - 1) < (dna.last - dna.first):
-    #   if genes[index] in translated:
-    #     matches.append(index)
-    #   index += 1
-
-    # print("found {} sequences".format([genes[s] for s in matches]))
-    # print("found {} indexes".format(matches))
+    matches = t.process(dna.code, dna.first, dna.last)
 
     total = 0
     for s in matches:
       total += health[s]
-    
-    total_health.append(total)
 
-  print("{} {}".format(min(total_health), max(total_health)))
+    if total > maximum:
+      maximum = total
+    elif total < minimum:
+      minimum = total
+
+  print("{} {}".format(minimum, maximum))
 
 
 if __name__ == '__main__':
