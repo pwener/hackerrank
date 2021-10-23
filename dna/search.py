@@ -1,30 +1,17 @@
+from bisect import bisect_left, bisect_right, bisect
+
 # binary search for index
-def search(array, target, lowest=True):
-  left = 0
-  right = len(array) - 1
+def search_left(array, target):
+  i = bisect_left(array, target)
+  return array[i]
 
-  while left <= right:
-    mid = (left + right) // 2
+# binary search for index
+def search_right(array, target):
+  i = bisect_right(array, target)
+  return array[i-1]
 
-    cond = False
-    
-    if lowest:
-      cond = (array[mid] > target and array[mid-1] < target)
-    else:
-      cond = (array[mid] < target and array[mid+1] > target)
-
-    if array[mid] == target or cond:
-      return array[mid]
-
-    if array[mid] < target:
-      left = mid + 1
-    else:
-      right = mid - 1
-  
-  return array[0]
-
-arr = [1, 3, 5, 10, 15, 20]
+arr = [1, 3, 5, 10, 15, 20, 22]
 
 # if I want [2, 18]
-print(search(arr, 2))
-print(search(arr, 18, False))
+print(search_left(arr, 3))
+print(search_right(arr, 19))

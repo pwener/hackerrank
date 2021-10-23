@@ -1,5 +1,16 @@
 #!/bin/python3
 
+from bisect import bisect_left, bisect_right
+
+# binary search for index
+def search_left(array, target):
+  i = bisect_left(array, target)
+  return i
+
+def search_right(array, target):
+  i = bisect_right(array, target)
+  return i-1
+
 class Vertex:
   def __init__(self, parentIndex=None, char=None):
     self.char = char
@@ -120,11 +131,19 @@ class Trie:
           break
         
         indexes = self.trie[check_state].idx
-        for i in indexes:
-          if i > last:
-            break
-          if i >= first:
-            result.append(i)
+        # print("found {}".format(indexes))
+
+        if len(indexes) == 1:
+          idx = indexes[0]
+          if idx >= first and idx <= last:
+            # print("append {}".format(indexes[0]))
+            result.append(idx)
+        else:
+          left = search_left(indexes, first)
+          right = search_right(indexes, last)
+          # print("left={} | right={}".format(left, right))
+          if indexes[left] >= first and indexes[right] <= last:
+            result.extend(indexes[left:right+1])
 
         check_state = self.trie[check_state].suffix
     
@@ -135,9 +154,6 @@ class DNA:
     self.first = first
     self.last = last
     self.code = code
-
-  def __str__(self):
-    return "{}-{} | {}".format(self.first, self.last, self.code)
 
 
 def dna(genes, health, dnas):
@@ -153,6 +169,7 @@ def dna(genes, health, dnas):
 
   for dna in dnas:
     matches = t.process(dna.code, dna.first, dna.last)
+    # print("sequences {}".format([genes[s] for s in matches]))
 
     total = 0
     for s in matches:
