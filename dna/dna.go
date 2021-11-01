@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -16,124 +15,223 @@ type dna struct {
 	d     string
 }
 
-func dnaAnalysis(genes []string, health []int32, dnas []*dna) {
-	// total := []int{}
-
-	seq, gens := findSeq(dnas[1], genes)
-	total := calcWeights(seq, gens, health[dnas[1].start:dnas[1].end+1])
-
-	fmt.Println(total)
-
-	// for _, v := range dnas {
-	// 	seq, gens := findSeq(v, genes)
-
-	// 	total = append(total, calcWeights(seq, gens, health[v.start:v.end+1]))
-	// }
-
-	// sortAsc(total)
-
-	// fmt.Printf("%d %d\n", total[0], total[len(total)-1])
+type vertex struct {
+	children    map[rune]int
+	leaf        bool
+	parent      int
+	parentChar  rune
+	suffixLink  int
+	endWordLink int
+	idxs        []int
+	pattern     string
 }
 
-func sortAsc(arr []int) {
-	sort.Slice(arr, func(i, j int) bool { return arr[i] < arr[j] })
+type ahoTrie struct {
+	trie []*vertex
+	size int
+	root int
 }
 
-func calcWeights(seq, genes []string, health []int32) int {
-	sum := int(0)
+func (aho *ahoTrie) Init() {
+	aho.trie = append(aho.trie, &vertex{
+		children: make(map[rune]int),
+	})
+	aho.size++
+	aho.root = 0
+}
 
-	charPointer := make(map[string]int, len(genes))
+func (aho *ahoTrie) add(pattern string, idx int) {
+	currentvertex := aho.root
 
-	for _, v := range genes {
-		charPointer[v] = 0
+	for _, v := range pattern {
+		if _, ok := aho.trie[currentvertex].children[v]; !ok {
+			aho.trie = append(aho.trie, &vertex{
+				suffixLink: -1,
+				parent:     currentvertex,
+				parentChar: v,
+				idxs:       []int{},
+				children:   make(map[rune]int),
+			})
+
+			aho.trie[currentvertex].children[v] = aho.size
+			aho.size++
+		}
+
+		currentvertex = aho.trie[currentvertex].children[v]
 	}
 
-	for _, v := range seq {
-		i := charPointer[v] % (len(genes))
+	aho.trie[currentvertex].leaf = true
+	aho.trie[currentvertex].pattern = pattern
+	aho.trie[currentvertex].idxs = append(aho.trie[currentvertex].idxs, idx)
+}
+
+func (aho *ahoTrie) calculateSuffixLink(vertex int) {
+	if vertex == aho.root || aho.trie[vertex].parent == aho.root {
+		aho.trie[vertex].suffixLink = aho.root
+		aho.trie[vertex].endWordLink = aho.root
+
+		if vertex != aho.root && aho.trie[vertex].leaf {
+			aho.trie[vertex].endWordLink = vertex
+		}
+
+		return
+	}
+
+	parentSuffix := aho.trie[aho.trie[vertex].parent].suffixLink
+
+	for {
+		suffixNode := aho.trie[parentSuffix]
+
+		if _, ok := suffixNode.children[aho.trie[vertex].parentChar]; ok {
+			aho.trie[vertex].suffixLink = suffixNode.children[aho.trie[vertex].parentChar]
+			break
+		}
+
+		if parentSuffix == aho.root {
+			aho.trie[vertex].suffixLink = aho.root
+			break
+		}
+
+		parentSuffix = suffixNode.suffixLink
+	}
+
+	if aho.trie[vertex].leaf {
+		aho.trie[vertex].endWordLink = vertex
+	} else {
+		aho.trie[vertex].endWordLink = aho.trie[aho.trie[vertex].suffixLink].endWordLink
+	}
+}
+
+type queue struct {
+	values []int
+	count  int
+}
+
+func (q *queue) Init(value int) {
+	q.values = make([]int, 0)
+
+	q.values = append(q.values, value)
+
+	q.count = 1
+}
+
+// remove old element
+func (q *queue) Dequeue() int {
+	last := q.values[0]
+	q.values = q.values[1:]
+
+	q.count--
+
+	return last
+}
+
+func (q *queue) Enqueue(value int) {
+	q.values = append(q.values, value)
+	q.count++
+}
+
+func (aho *ahoTrie) Prepare() {
+	vertexQueue := queue{}
+	vertexQueue.Init(aho.root)
+
+	for vertexQueue.count > 0 {
+		currentvertex := vertexQueue.Dequeue()
+
+		aho.calculateSuffixLink(currentvertex)
+
+		for key := range aho.trie[currentvertex].children {
+			vertexQueue.Enqueue(aho.trie[currentvertex].children[key])
+		}
+	}
+}
+
+func (aho *ahoTrie) ProcessString(text string, first int, last int) []int {
+	curentState := aho.root
+
+	result := []int{}
+
+	for j := 0; j < len(text); j++ {
+		for {
+			if _, ok := aho.trie[curentState].children[rune(text[j])]; ok {
+				curentState = aho.trie[curentState].children[rune(text[j])]
+				break
+			}
+
+			if curentState == aho.root {
+				break
+			}
+
+			curentState = aho.trie[curentState].suffixLink
+		}
+		checkstate := curentState
 
 		for {
-			if v == genes[i] {
-				sum += int(health[i])
-				charPointer[v] = i + 1
-				break
-			}
-			i = (i + 1) % len(genes)
-		}
-	}
+			checkstate = aho.trie[checkstate].endWordLink
 
-	return sum
-}
-
-func findLimIndexes(genes []string) (int, int) {
-	min, max := len(genes[0]), len(genes[0])
-
-	for _, v := range genes {
-		if len(v) < min {
-			min = len(v)
-		}
-
-		if len(v) > max {
-			max = len(v)
-		}
-	}
-
-	return min, max
-}
-
-func findSeq(code *dna, genes []string) ([]string, []string) {
-	strands := 0
-
-	sequence := []string{}
-
-	genesSlice := genes[code.start : code.end+1]
-
-	lowIndex, highIndex := findLimIndexes(genesSlice)
-
-	fmt.Println("[low, high] is ", lowIndex, highIndex)
-
-	for len(sequence) <= int(code.end-code.start) {
-		var target string
-
-		index := lowIndex
-		fmt.Println("iteration>>>", strands)
-
-		for index <= highIndex {
-			realIndex := strands
-
-			if strands+index > len(code.d) {
-				realIndex = len(code.d) - index
-			}
-
-			fmt.Printf("checking [%d:%d]\n", realIndex, realIndex+index)
-
-			target = code.d[realIndex : realIndex+index]
-
-			if checkStrInArr(target, genesSlice) {
-				sequence = append(sequence, target)
-				fmt.Println("appended...")
+			if checkstate == aho.root {
 				break
 			}
 
-			index++
+			idxs := aho.trie[checkstate].idxs
+
+			if len(idxs) == 1 {
+				idx := idxs[0]
+
+				if idx >= first && idx <= last {
+					result = append(result, idx)
+				}
+			} else {
+				for _, idx := range idxs {
+					if idx > last {
+						break
+					}
+
+					if idx >= first {
+						result = append(result, idx)
+					}
+				}
+			}
+
+			checkstate = aho.trie[checkstate].suffixLink
 		}
-
-		strands++
-
-		fmt.Printf("\n\n")
 	}
 
-	fmt.Println(sequence)
-
-	return sequence, genesSlice
+	return result
 }
 
-func checkStrInArr(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
+func dnaAnalysis(genes []string, health []int32, dnas []*dna) {
+	aho := ahoTrie{}
+	aho.Init()
+
+	for i, v := range genes {
+		aho.add(v, i)
+	}
+
+	aho.Prepare()
+
+	min := int(^uint(0) >> 1)
+	max := 0
+
+	for _, seq := range dnas {
+
+		matches := aho.ProcessString(seq.d, int(seq.start), int(seq.end))
+
+		total := 0
+
+		for _, idx := range matches {
+			total += int(health[idx])
+		}
+
+		if total > max {
+			max = total
+		}
+
+		if total < min {
+			min = total
 		}
 	}
-	return false
+
+	fmt.Printf("%d %d\n", min, max)
 }
 
 func main() {
