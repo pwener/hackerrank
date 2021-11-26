@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type dna struct {
@@ -24,6 +25,7 @@ type vertex struct {
 	endWordLink int
 	idxs        []int
 	pattern     string
+	visited 		bool
 }
 
 type ahoTrie struct {
@@ -47,10 +49,12 @@ func (aho *ahoTrie) add(pattern string, idx int) {
 		if _, ok := aho.trie[currentvertex].children[v]; !ok {
 			aho.trie = append(aho.trie, &vertex{
 				suffixLink: -1,
+				endWordLink: -1,
 				parent:     currentvertex,
 				parentChar: v,
 				idxs:       []int{},
 				children:   make(map[rune]int),
+				visited: false,
 			})
 
 			aho.trie[currentvertex].children[v] = aho.size
@@ -140,7 +144,11 @@ func (aho *ahoTrie) Prepare() {
 		aho.calculateSuffixLink(currentvertex)
 
 		for key := range aho.trie[currentvertex].children {
-			vertexQueue.Enqueue(aho.trie[currentvertex].children[key])
+			curr := aho.trie[currentvertex].children[key]
+			if !aho.trie[curr].visited {
+				aho.trie[curr].visited = true
+				vertexQueue.Enqueue(curr)
+			}
 		}
 	}
 }
@@ -203,17 +211,19 @@ func dnaAnalysis(genes []string, health []int32, dnas []*dna) {
 	aho := ahoTrie{}
 	aho.Init()
 
+	start := time.Now()
 	for i, v := range genes {
 		aho.add(v, i)
 	}
 
 	aho.Prepare()
+	elapsed := time.Since(start)
+	fmt.Printf("Prepare took %s\n", elapsed)
 
 	min := int(^uint(0) >> 1)
 	max := 0
 
 	for _, seq := range dnas {
-
 		matches := aho.ProcessString(seq.d, int(seq.start), int(seq.end))
 
 		total := 0
