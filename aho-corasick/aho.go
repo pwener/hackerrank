@@ -13,19 +13,19 @@ import (
 )
 
 type Vertex struct {
-	children map[rune]int
-	leaf bool
-	parent rune
-	parentChar rune
-	suffixLink int
+	children    map[rune]int
+	leaf        bool
+	parent      rune
+	parentChar  rune
+	suffixLink  int
 	endWordLink int
 }
 
 type Aho struct {
-	trie []*Vertex
+	trie     []*Vertex
 	wordsLen []int
-	size int
-	root int
+	size     int
+	root     int
 }
 
 func (a *Aho) Init() {
@@ -43,16 +43,16 @@ func (aho *Aho) AddString(pattern string) {
 		if _, ok := aho.trie[currentVertex].children[v]; !ok {
 			aho.trie = append(aho.trie, &Vertex{
 				suffixLink: -1,
-				parent: rune(currentVertex),
+				parent:     rune(currentVertex),
 				parentChar: v,
-				children: make(map[rune]int),
+				children:   make(map[rune]int),
 			})
 
 			aho.trie[currentVertex].children[v] = aho.size
 			aho.size++
 		}
 
-		currentVertex = aho.trie[currentVertex].children[v];
+		currentVertex = aho.trie[currentVertex].children[v]
 	}
 
 	aho.trie[currentVertex].leaf = true
@@ -60,7 +60,7 @@ func (aho *Aho) AddString(pattern string) {
 }
 
 func (aho *Aho) calculateSuffLink(vertex int) {
-	if (vertex == aho.root) {
+	if vertex == aho.root {
 		aho.trie[vertex].suffixLink = aho.root
 		aho.trie[vertex].endWordLink = aho.root
 		return
@@ -70,7 +70,7 @@ func (aho *Aho) calculateSuffLink(vertex int) {
 		aho.trie[vertex].suffixLink = aho.root
 
 		if aho.trie[vertex].leaf {
-			aho.trie[vertex].endWordLink = vertex;
+			aho.trie[vertex].endWordLink = vertex
 		} else {
 			aho.trie[vertex].endWordLink = aho.root
 			return
@@ -86,16 +86,16 @@ func (aho *Aho) calculateSuffLink(vertex int) {
 			break
 		}
 
-		if (currentBetterVertex == aho.root) {
-			aho.trie[vertex].suffixLink = aho.root;
-			break;
+		if currentBetterVertex == aho.root {
+			aho.trie[vertex].suffixLink = aho.root
+			break
 		}
 
-		currentBetterVertex = aho.trie[currentBetterVertex].suffixLink;
+		currentBetterVertex = aho.trie[currentBetterVertex].suffixLink
 	}
 
 	if aho.trie[vertex].leaf {
-		aho.trie[vertex].endWordLink = vertex;
+		aho.trie[vertex].endWordLink = vertex
 	} else {
 		aho.trie[vertex].endWordLink = aho.trie[aho.trie[vertex].suffixLink].endWordLink
 	}
@@ -103,7 +103,7 @@ func (aho *Aho) calculateSuffLink(vertex int) {
 
 type Queue struct {
 	values []int
-	count int
+	count  int
 }
 
 func (q *Queue) Init(value int) {
@@ -111,7 +111,7 @@ func (q *Queue) Init(value int) {
 
 	q.values = append(q.values, value)
 
-	q.count = 1;
+	q.count = 1
 }
 
 // remove old element
@@ -119,23 +119,22 @@ func (q *Queue) Dequeue() int {
 	last := q.values[0]
 	q.values = q.values[1:]
 
-	q.count--;
+	q.count--
 
 	return last
 }
 
 func (q *Queue) Enqueue(value int) {
 	q.values = append(q.values, value)
-	q.count++;
+	q.count++
 }
-
 
 func (aho *Aho) Prepare() {
 	vertexQueue := Queue{}
-	vertexQueue.Init(aho.root);
-	
+	vertexQueue.Init(aho.root)
+
 	for vertexQueue.count > 0 {
-		currentVertex := vertexQueue.Dequeue();
+		currentVertex := vertexQueue.Dequeue()
 
 		aho.calculateSuffLink(currentVertex)
 
@@ -154,14 +153,14 @@ func (aho *Aho) ProcessString(text string) int {
 		for {
 			if _, ok := aho.trie[curentState].children[rune(text[j])]; ok {
 				curentState = aho.trie[curentState].children[rune(text[j])]
-				break;
+				break
 			}
 
 			if curentState == aho.root {
-				break;
+				break
 			}
 
-			curentState = aho.trie[curentState].suffixLink;
+			curentState = aho.trie[curentState].suffixLink
 		}
 		checkstate := curentState
 
@@ -169,32 +168,32 @@ func (aho *Aho) ProcessString(text string) int {
 			checkstate = aho.trie[checkstate].endWordLink
 
 			if checkstate == aho.root {
-				break;
+				break
 			}
 
-			result++;
+			result++
 			// indexOfMatch = j + 1 - aho.wordsLen[aho.trie[checkstate].workID];
 
-			checkstate = aho.trie[checkstate].suffixLink;
+			checkstate = aho.trie[checkstate].suffixLink
 		}
 	}
 
-	return result;
+	return result
 }
 
 func main() {
 	aho := Aho{}
 	aho.Init()
 
-	patterns := []string{"abba", "cab", "baba", "caab", "ac", "abac", "bac" }
+	patterns := []string{"a", "b", "c", "aa", "d", "b"}
 
 	for _, v := range patterns {
-		aho.AddString(v);
+		aho.AddString(v)
 	}
 
 	aho.Prepare()
 
-	countOfMatches := aho.ProcessString("abbacaabac")
+	countOfMatches := aho.ProcessString("caaab")
 
 	fmt.Println(countOfMatches)
 }
